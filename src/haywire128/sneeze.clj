@@ -16,6 +16,32 @@
 
 (defn tag-name->map [tag-name] (merge {:extra-attrs {} :content nil} (#'parse-keyword tag-name)))
 
+(defn html-escape-char [c]
+  (case c
+    \& "&amp;"
+    \< "&lt;"
+    \> "&gt;"
+    \" "&quot;"
+    \' "&#39;"
+    \` "&#96;"
+    \, "&#44;"
+    \! "&#33;"
+    \@ "&#64;"
+    \$ "&#36;"
+    \% "&#37;"
+    \( "&#40;"
+    \) "&#41;"
+    \= "&#61;"
+    \+ "&#43;"
+    \{ "&#123;"
+    \} "&#125;"
+    \[ "&#91;"
+    \] "&#93;"
+    (str c)))
+
+(defn html-escape-string [s]
+  (apply str (map html-escape-char s)))
+
 (defn form->map [form] (if (vector? form) 
                          (if (= clojure.lang.PersistentArrayMap (type (second form))) 
                            (let [contents (subvec form 2)]
@@ -26,7 +52,7 @@
                              (if (not (= clojure.lang.LazySeq (type (first contents))))
                                (assoc (#'tag-name->map (first form)) :content (mapv form->map contents))
                                (assoc (#'tag-name->map (first form)) :content (apply mapv form->map contents)))))
-                         (str form)))
+                         (if (string? form) (#'html-escape-string form) (str form))))
 
 (defn stringify-extra-attrs [attrs]
   (->> attrs
@@ -50,3 +76,8 @@
 (defn sneeze [form]
   (let [form-map (form->map form)]
     (map->html form-map)))
+
+    (comment 
+    (html-escape-string "<$>")
+    (sneeze [:body "<Kyle Howley>"])
+    )
